@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta>
+    <title>@model.title</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.6.0/css/bootstrap.min.css"
+        integrity="sha512-P5MgMn1jBN01asBgU0z60Qk4QxiXo86+wlFahKrsQf37c9cro517WzVSPPV1tDKzhku2iJ2FVgL67wG03SGnNA=="
+        crossorigin="anonymous" />
+    <link rel='stylesheet' href='/stylesheets/style.css' />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"
+        integrity="sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ=="
+        crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.6.0/js/bootstrap.bundle.min.js"
+        integrity="sha512-wV7Yj1alIZDqZFCUQJy85VN+qvEIly93fIQAN7iqDFCPEucLCeNFz4r35FCo9s6WrpdDQPi80xbljXB8Bjtvcg=="
+        crossorigin="anonymous"></script>
+    <script>
+        var id = 1;
+        var ids = [];
+        function getdata(){
+            $.ajax({
+                url: "product/all"
+            }).then(function (products) {
+                const markup =
+                    `
+                    ${products.map(products => `
+                        <div class="product shadow">
+                        <a href="#" class="item" productid="${products.pid}" oid="${products._id}">
+                            <div class="parent">
+                                <img class="pic" src="/images/${products.image}"
+                                    alt="${products.name}">
+                            </div>
+                            <table style="width:100%">
+                                <tbody>
+                                    <tr>
+                                        <td class="price"><span>PKR</span> <span>${products.price}</span></td>
+                                        <td class="stock"><span>Qty</span> <span>${products.qty}</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+
+                            <div class="des">
+                                ${products.name}
+                            </div>
+                        </a>
+                        </div>
+                    `)}
+                `
+                $(".content").html(markup);
+                $(".bill").hide();
+            });
+        }
+        function searchdata(searchvalue){
+            $.ajax({
+                        url: `/product/search/${searchvalue}`
+                    }).then(function (products) {
+                        const markup =
+                            `
+                        
+                        ${products.map(products => `
+                            <div class="product shadow">
+                        <a href="#" class="item" productid="${products.pid}">
+                            <div class="parent">
+                                <img class="pic" src="/images/${products.image}"
+                                    alt="${products.name}">
+                            </div>
+                            <table style="width:100%">
+                                <tbody>
+                                    <tr>
+                                        <td class="price"><span>PKR</span> <span>${products.price}</span></td>
+                                        <td class="stock"><span>Qty</span> <span>${products.qty}</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+
+                            <div class="des">
+                                ${products.name}
+                            </div>
+                        </a>
+                    </div>
+                        `)}
+                    
+                        `
+                        $(".content").html(markup);
+                    })
+        }
+        $(document).ready(function () {
+
+            getdata();
+
+
+
+            $("body").on("click", "a.item", function () {
+                var productid = $(this).attr("productid");
+                var oid = $(this).attr("oid");
+                let array = $.inArray(oid, ids);
+                if (array == -1) {
+                    console.log(ids);
+                    console.log($.inArray(productid, ids));
+                    productIds(oid);
+                    cart(productid);
+                }
+            });
+
+
+
+            $("#checkout").on("click", function(){
+                
+                console.log(ids);
+                $.ajax({
+                    url: "order/add",
+                    data: {items: ids },
+                    method: "POST"
+                }).then(function(){
+                    
+                });
+                $(".bill").css("display", "none");
+            });
+
+
+
+
+
+            $("#search").on("input", function (e) {
+                var searchvalue = $(this).val();
+                if (searchvalue) {
+                    searchdata(searchvalue);
+                }
+                else {
+                    getdata();
+                }
+            });
+
+        });
+
+
+
+        function cart(productid) {
+            $(".bill").show();
+            let row = $("a[productid=" + productid + "]").children();
+            let image = $(row).eq(0).children().eq(0).attr("src");
+            let price = $(row).eq(1).children().eq(0).children().eq(0).children().eq(0).children().eq(1).text();
+            var newprice = parseInt(price);
+            let qty = $(row).eq(1).children().eq(0).children().eq(0).children().eq(1).children().eq(1).text();
+            let des = $(row).eq(2).text();
+
+            $(".bill table tbody").append(
+                `
+                <tr>
+                    <td>${id++}</td>
+                    <td>
+                        <img src="${image}" width="75" style="margin:auto">
+                    </td>
+                    <td style="text-align: left; padding-left: 10px;">
+                        ${des}
+                    </td>
+                    <td>${price}</td>
+                    <td>
+                        <input type="number" class="qty txt" value="1" min="1" max="${qty}">
+                    </td>
+                    <td>${newprice * $(".qty").val()}</td>
+                </tr>
+                `);
+
+            var total = total + (newprice * $(".qty").val());
+            $("tfoot tr td:last-child").text(total);
+        }
+
+        function productIds(productid) {
+            ids.push(productid)
+        }
+
+
+    </script>
+</head>
+
+<body style="background-color: #f4f4f4;">
+    <h2 style="color: navy; ">Chase Up</h2>
+    <table style="width: 100%;">
+        <tbody>
+            <tr>
+                <td style="width: 50%;"><input type="text" class="form-control" id="search" placeholder="search"></td>
+                <td style="width: 50%; text-align: right;">
+                    <a href="#" id="checkout">
+                        <h2 style="color: green;">Check Out</h2>
+                    </a>
+                </td>
+            </tr>
+            <tr>
+                <td id="msg" style="text-align: center;"></td>
+                <td></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div id="products" class="content">
+
+    </div>
+    <div id="bill" class="bill" style="">
+        <table style="width: 540px;">
+            <thead>
+                <tr>
+                    <th>Sno</th>
+                    <th style="width: 70px;">Product</th>
+                    <th style="width: 200px;">Name</th>
+                    <th>Price</th>
+                    <th>Qty</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody>
+
+            </tbody>
+            <tfoot>
+                <tr style="border-top: 2px solid #585858;">
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+
+</body>
+
+</html>
